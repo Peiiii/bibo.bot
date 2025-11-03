@@ -13,6 +13,9 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [biboMood, setBiboMood] = useState<Mood>('Happy');
   const moodTimeoutRef = useRef<number | null>(null);
+  const [pupilOffset, setPupilOffset] = useState({ x: 0, y: 0 });
+  const [headTilt, setHeadTilt] = useState(0);
+  const biboAvatarRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const session = createChatSession();
@@ -91,15 +94,53 @@ const App: React.FC = () => {
     }, 2500);
   };
 
+  const handleHeaderMouseMove = (e: React.MouseEvent<HTMLElement>) => {
+    if (!biboAvatarRef.current) return;
+
+    const biboRect = biboAvatarRef.current.getBoundingClientRect();
+    const centerX = biboRect.left + biboRect.width / 2;
+    const centerY = biboRect.top + biboRect.height / 2;
+    
+    const deltaX = e.clientX - centerX;
+    const deltaY = e.clientY - centerY;
+
+    // Define an interaction radius around Bibo. The effect is clamped outside this radius.
+    const interactionRadius = biboRect.width * 1.5;
+
+    const moveX = Math.max(-1, Math.min(1, deltaX / interactionRadius));
+    const moveY = Math.max(-1, Math.min(1, deltaY / interactionRadius));
+
+    const maxPupilOffset = 4.5;
+    setPupilOffset({
+      x: moveX * maxPupilOffset,
+      y: moveY * maxPupilOffset,
+    });
+
+    const maxTilt = 10; // degrees
+    setHeadTilt(moveX * maxTilt * -1); // Invert for natural tilt
+  };
+
+  const handleHeaderMouseLeave = () => {
+    setPupilOffset({ x: 0, y: 0 });
+    setHeadTilt(0);
+  };
+
 
   return (
     <div className="h-screen w-screen bg-gradient-to-b from-gray-900 via-purple-900/50 to-gray-900 text-white flex flex-col p-2 sm:p-4">
-      <header className="flex-shrink-0 py-4">
+      <header 
+        className="flex-shrink-0 py-4"
+        onMouseMove={handleHeaderMouseMove}
+        onMouseLeave={handleHeaderMouseLeave}
+      >
         <BiboAvatar 
+          ref={biboAvatarRef}
           isLoading={isLoading} 
           mood={biboMood}
           onQuickAction={handleQuickAction}
           onPat={handlePatBibo}
+          pupilOffset={pupilOffset}
+          headTilt={headTilt}
         />
       </header>
       <main className="flex-1 min-h-0">

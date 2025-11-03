@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, forwardRef } from 'react';
 import { Mood } from '../types';
 
 interface BiboAvatarProps {
@@ -6,9 +6,13 @@ interface BiboAvatarProps {
   mood: Mood;
   onQuickAction: (prompt: string) => void;
   onPat: () => void;
+  pupilOffset: { x: number; y: number };
+  headTilt: number;
 }
 
-const BiboAvatar: React.FC<BiboAvatarProps> = ({ isLoading, mood, onQuickAction, onPat }) => {
+const BiboAvatar = forwardRef<HTMLDivElement, BiboAvatarProps>(({ isLoading, mood, onQuickAction, onPat, pupilOffset, headTilt }, ref) => {
+  const [isJiggling, setIsJiggling] = useState(false);
+
   const getMouthPath = (currentMood: Mood) => {
     switch (currentMood) {
       case 'Happy':
@@ -19,6 +23,13 @@ const BiboAvatar: React.FC<BiboAvatarProps> = ({ isLoading, mood, onQuickAction,
       default:
         return "M 40 70 Q 50 80 60 70"; // Original gentle smile
     }
+  };
+  
+  const handleClick = () => {
+    if (isLoading) return;
+    onPat();
+    setIsJiggling(true);
+    setTimeout(() => setIsJiggling(false), 400);
   };
 
   const QuickActionButton: React.FC<{ onClick: () => void; ariaLabel: string; children: React.ReactNode }> = ({ onClick, ariaLabel, children }) => (
@@ -34,33 +45,35 @@ const BiboAvatar: React.FC<BiboAvatarProps> = ({ isLoading, mood, onQuickAction,
 
   return (
     <div className="flex flex-col items-center justify-center space-y-4">
-      <div className={`relative w-40 h-40 md:w-48 md:h-48 transition-transform duration-500 ${isLoading ? 'animate-pulse' : ''}`}>
-        <div className="absolute inset-0 bg-purple-500 rounded-full blur-2xl opacity-50"></div>
-        <svg viewBox="0 0 100 100" className="relative z-10 animate-float">
-          {/* Body */}
-          <path d="M 50,95 C 20,95 10,70 10,50 C 10,30 20,5 50,5 C 80,5 90,30 90,50 C 90,70 80,95 50,95 Z" fill="url(#bibo-gradient)" />
+      <div
+        ref={ref}
+        onClick={handleClick}
+        className={`relative w-40 h-40 md:w-48 md:h-48 group cursor-pointer transition-transform duration-500 ${isLoading ? 'animate-pulse' : ''}`}
+        aria-label="Interact with Bibo"
+      >
+        <div className="absolute inset-0 bg-purple-500 rounded-full blur-2xl opacity-50 transition-opacity duration-300"></div>
+        <svg viewBox="0 0 100 100" className={`relative z-10 animate-breathe ${isJiggling ? 'animate-jiggle' : ''}`}>
+          <path d="M 50,95 C 20,95 10,70 10,50 C 10,30 20,5 50,5 C 80,5 90,30 90,50 C 90,70 80,95 50,95 Z" fill="url(#bibo-gradient)" className="transition-all duration-300" />
           
-          {/* Blushes */}
-          <g className={`transition-opacity duration-500 ${mood === 'Happy' ? 'opacity-100' : 'opacity-0'}`}>
-            <ellipse cx="28" cy="60" rx="8" ry="4" fill="url(#blush-gradient)" />
-            <ellipse cx="72" cy="60" rx="8" ry="4" fill="url(#blush-gradient)" />
+          <g style={{ transform: `rotate(${headTilt}deg)`, transition: 'transform 0.3s ease-out', transformOrigin: '50% 80%' }}>
+            <g className={`transition-opacity duration-500 ${mood === 'Happy' ? 'opacity-100' : 'opacity-0'}`}>
+              <ellipse cx="28" cy="60" rx="8" ry="4" fill="url(#blush-gradient)" />
+              <ellipse cx="72" cy="60" rx="8" ry="4" fill="url(#blush-gradient)" />
+            </g>
+
+            <g transform="translate(0, -5)">
+              <circle cx="35" cy="50" r="8" fill="white" />
+              <circle cx="65" cy="50" r="8" fill="white" />
+              <circle cx={35 + pupilOffset.x} cy={50 + pupilOffset.y} r="4" fill="black" className="animate-blink transition-transform duration-100 ease-out" />
+              <circle cx={65 + pupilOffset.x} cy={50 + pupilOffset.y} r="4" fill="black" className="animate-blink transition-transform duration-100 ease-out" />
+            </g>
+
+            <path d={getMouthPath(mood)} stroke="white" strokeWidth="2" fill="none" strokeLinecap="round" />
           </g>
 
-          {/* Eyes */}
-          <g transform="translate(0, -5)">
-            <circle cx="35" cy="50" r="8" fill="white" />
-            <circle cx="65" cy="50" r="8" fill="white" />
-            <circle cx="37" cy="52" r="4" fill="black" className="animate-blink" />
-            <circle cx="63" cy="52" r="4" fill="black" className="animate-blink" />
-          </g>
-
-          {/* Mouth */}
-          <path d={getMouthPath(mood)} stroke="white" strokeWidth="2" fill="none" strokeLinecap="round" />
-
-          {/* Antenna */}
           <g>
             <path d="M 50 15 Q 40 0 35 5" stroke="#9333ea" strokeWidth="2.5" fill="none" />
-            <circle cx="35" cy="5" r="4" fill="url(#antenna-orb)" />
+            <circle cx="35" cy="5" r="4" fill="url(#antenna-orb)" className="animate-antenna-pulse group-hover:animate-antenna-pulse-fast" />
           </g>
           
           <defs>
@@ -79,13 +92,13 @@ const BiboAvatar: React.FC<BiboAvatarProps> = ({ isLoading, mood, onQuickAction,
           </defs>
         </svg>
       </div>
-      <style jsx>{`
-        @keyframes float {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-8px); }
+      <style>{`
+        @keyframes breathe {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.03); }
         }
-        .animate-float {
-          animation: float 3s ease-in-out infinite;
+        .animate-breathe {
+          animation: breathe 4s ease-in-out infinite;
         }
         @keyframes blink {
           0%, 90%, 100% { transform: scaleY(1); }
@@ -95,20 +108,42 @@ const BiboAvatar: React.FC<BiboAvatarProps> = ({ isLoading, mood, onQuickAction,
           animation: blink 4s infinite;
           transform-origin: center;
         }
+        @keyframes antenna-pulse {
+          0%, 100% { transform: scale(1); opacity: 0.9; }
+          50% { transform: scale(1.2); opacity: 1; }
+        }
+        .animate-antenna-pulse {
+          animation: antenna-pulse 2s ease-in-out infinite;
+          transform-origin: center;
+        }
+        .animate-antenna-pulse-fast {
+          animation: antenna-pulse 0.8s ease-in-out infinite;
+          transform-origin: center;
+        }
+        @keyframes jiggle {
+            0%, 100% { transform: translate(-1px, 1px) rotate(-1deg); }
+            10% { transform: translate(-1px, -2px) rotate(-1deg); }
+            20% { transform: translate(-3px, 0px) rotate(1deg); }
+            30% { transform: translate(3px, 2px) rotate(0deg); }
+            40% { transform: translate(1px, -1px) rotate(1deg); }
+            50% { transform: translate(-1px, 2px) rotate(-1deg); }
+            60% { transform: translate(-3px, 1px) rotate(0deg); }
+            70% { transform: translate(3px, 1px) rotate(-1deg); }
+            80% { transform: translate(-1px, -1px) rotate(1deg); }
+            90% { transform: translate(1px, 2px) rotate(0deg); }
+        }
+        .animate-jiggle {
+          animation: jiggle 0.4s linear;
+        }
       `}</style>
       <h1 className="text-3xl md:text-4xl font-bold text-white tracking-wider">bibo.bot</h1>
       <p className="text-purple-300">Your friendly AI companion</p>
       
       <div className="flex items-center space-x-4 pt-2">
         <QuickActionButton onClick={onPat} ariaLabel="Pat Bibo">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-            <path d="M10 3.5a.75.75 0 01.75.75V9h4.5a.75.75 0 010 1.5H10v4.5a.75.75 0 01-1.5 0V10.5H4a.75.75 0 010-1.5h4.5V4.25A.75.75 0 0110 3.5z" stroke="white" strokeWidth="1" opacity="0" />
-            <path d="M10 5a1 1 0 011 1v3.5a.5.5 0 00.5.5h3.5a1 1 0 011 1v1a1 1 0 01-1 1h-3.5a.5.5 0 00-.5.5V16a1 1 0 01-1 1h-1a1 1 0 01-1-1v-3.5a.5.5 0 00-.5-.5H3a1 1 0 01-1-1v-1a1 1 0 011-1h3.5a.5.5 0 00.5-.5V6a1 1 0 011-1h1z" opacity="0" />
-            <path fillRule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clipRule="evenodd" opacity="0" />
-            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" opacity="0" />
-            <path d="M18 8.25c0 1.31-2.686 2.5-6 2.5S6 9.56 6 8.25 8.686 5.75 12 5.75s6 1.19 6 2.5zM12 15.25c-3.314 0-6-1.19-6-2.5 0-.41.246-.78.648-1.085a.75.75 0 011.02.215 4.484 4.484 0 005.664 0 .75.75 0 011.02-.215A4.426 4.426 0 0118 12.75c0 1.31-2.686 2.5-6 2.5z" opacity="0"/>
-            <path d="M10.362 3.234a.75.75 0 00-1.03-.002L3.234 8.632a.75.75 0 00-.236.53V15.75a.75.75 0 00.75.75h6.588a.75.75 0 00.53-.235l5.398-6.05a.75.75 0 00.002-1.03l-5.17-5.17zM9.5 6.5a1 1 0 11-2 0 1 1 0 012 0z" />
-          </svg>
+           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+           </svg>
         </QuickActionButton>
         <QuickActionButton onClick={() => onQuickAction("Tell me a funny joke! 🤣")} ariaLabel="Tell a joke">
           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -124,6 +159,8 @@ const BiboAvatar: React.FC<BiboAvatarProps> = ({ isLoading, mood, onQuickAction,
 
     </div>
   );
-};
+});
+
+BiboAvatar.displayName = "BiboAvatar";
 
 export default BiboAvatar;
