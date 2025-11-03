@@ -117,9 +117,17 @@ const BiboAvatar = forwardRef<HTMLDivElement, BiboAvatarProps>(({ isLoading, moo
               )}
               
               {mood === 'Love' && (
-                  <g className="animate-love-pulse" style={{transformOrigin: '50% 50%'}}>
-                      <path transform={`translate(${22 + pupilOffset.x}, ${42 + pupilOffset.y}) scale(0.45)`} d="M10,3 A2.5,2.5 0 0,1 15,3 A2.5,2.5 0 0,1 20,3 Q22.5,5 20,7.5 L15,12.5 L10,7.5 Q7.5,5 10,3 z" fill="#ff4d6d" />
-                      <path transform={`translate(${52 + pupilOffset.x}, ${42 + pupilOffset.y}) scale(0.45)`} d="M10,3 A2.5,2.5 0 0,1 15,3 A2.5,2.5 0 0,1 20,3 Q22.5,5 20,7.5 L15,12.5 L10,7.5 Q7.5,5 10,3 z" fill="#ff4d6d" />
+                  <g>
+                      <g transform={`translate(${35 + pupilOffset.x}, ${50 + pupilOffset.y})`}>
+                          <g className="animate-love-pulse" style={{transformOrigin: 'center'}}>
+                              <path transform="scale(1.1) translate(0, 1)" d="M0,-5 C-3,-8 -7,-6 -7,-2 C-7,2 0,4 0,6 C0,4 7,2 7,-2 C7,-6 3,-8 0,-5 Z" fill="#ff4d6d" />
+                          </g>
+                      </g>
+                      <g transform={`translate(${65 + pupilOffset.x}, ${50 + pupilOffset.y})`}>
+                          <g className="animate-love-pulse" style={{transformOrigin: 'center'}}>
+                              <path transform="scale(1.1) translate(0, 1)" d="M0,-5 C-3,-8 -7,-6 -7,-2 C-7,2 0,4 0,6 C0,4 7,2 7,-2 C7,-6 3,-8 0,-5 Z" fill="#ff4d6d" />
+                          </g>
+                      </g>
                   </g>
               )}
 
@@ -146,9 +154,11 @@ const BiboAvatar = forwardRef<HTMLDivElement, BiboAvatarProps>(({ isLoading, moo
 
               {mood === 'Cool' && (
                 <g style={{ transform: `translate(${pupilOffset.x * 0.5}px, ${pupilOffset.y * 0.5}px)` }}>
-                    <path d="M25,45 C20,45 18,55 25,55 L45,55 C52,55 50,45 45,45 Z M55,45 C50,45 48,55 55,55 L75,55 C82,55 80,45 75,45 Z M45,50 L55,50" fill="#222" stroke="#111" strokeWidth="1" />
-                    <path d="M30,48 L40,48" stroke="white" strokeWidth="2" strokeLinecap="round" opacity="0.2" />
-                    <path d="M60,48 L70,48" stroke="white" strokeWidth="2" strokeLinecap="round" opacity="0.2" />
+                    {/* Frame */}
+                    <path d="M22,43 C18,43,18,60,25,60 L45,60 C52,60,52,43,45,43 Z M55,43 C48,43,48,60,55,60 L75,60 C82,60,82,43,75,43 Z M45,51.5 L55,51.5" fill="#222" stroke="#111" strokeWidth="1.5" />
+                    {/* Dynamic Glare */}
+                    <path d={`M28 52 Q ${33 - headTilt * 0.1} 48 ${38 - headTilt * 0.2} 53`} stroke="white" strokeWidth="2.5" strokeLinecap="round" opacity="0.2" fill="none" />
+                    <path d={`M58 52 Q ${63 - headTilt * 0.1} 48 ${68 - headTilt * 0.2} 53`} stroke="white" strokeWidth="2.5" strokeLinecap="round" opacity="0.2" fill="none" />
                 </g>
               )}
             </g>
@@ -156,7 +166,10 @@ const BiboAvatar = forwardRef<HTMLDivElement, BiboAvatarProps>(({ isLoading, moo
             <path d={getMouthPath(mood)} stroke="white" strokeWidth="2" fill="none" strokeLinecap="round" style={{transition: 'd 0.3s cubic-bezier(0.4, 0, 0.2, 1)'}} />
             
             {mood === 'Silly' && (
-              <path d="M48 83 C 48 90, 52 90, 52 83 Z" fill="#f472b6" style={{ transform: `translate(${pupilOffset.x * 0.2}px, 0)`}} />
+              <g style={{ transform: `translate(${pupilOffset.x * 0.2}px, 0)`}}>
+                <path d="M43 82 C 42 96, 58 96, 57 82 Z" fill="#f472b6" />
+                <path d="M50 83 V 90" stroke="#e11d48" strokeWidth="1" strokeLinecap="round" opacity="0.6"/>
+              </g>
             )}
           </g>
 
@@ -233,10 +246,10 @@ const BiboAvatar = forwardRef<HTMLDivElement, BiboAvatarProps>(({ isLoading, moo
         }
         @keyframes love-pulse {
             0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.15); }
+            50% { transform: scale(1.07); }
         }
         .animate-love-pulse {
-          animation: love-pulse 1s ease-in-out infinite;
+          animation: love-pulse 1.5s ease-in-out infinite;
         }
         @keyframes sparkle-burst {
           0% {
