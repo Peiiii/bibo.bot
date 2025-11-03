@@ -12,9 +12,11 @@ interface BiboAvatarProps {
 
 const BiboAvatar = forwardRef<HTMLDivElement, BiboAvatarProps>(({ isLoading, mood, onQuickAction, onMoodChange, pupilOffset, headTilt }, ref) => {
   const [isJiggling, setIsJiggling] = useState(false);
+  const [sparkles, setSparkles] = useState<Array<{ id: number; angle: number; color: string }>>([]);
 
   const getMouthPath = (currentMood: Mood) => {
     switch (currentMood) {
+      case 'Silly':
       case 'Happy':
       case 'Wink':
       case 'Love':
@@ -25,9 +27,25 @@ const BiboAvatar = forwardRef<HTMLDivElement, BiboAvatarProps>(({ isLoading, moo
         return "M 50 78 a 6 6 0 1 0 0.001 0"; // Larger open 'O' mouth
       case 'Sad':
         return "M 40 80 Q 50 70 60 80"; // Sad mouth
+      case 'Cool':
+        return "M 42 75 Q 50 80 58 75"; // Slight smirk
       case 'Neutral':
       default:
         return "M 40 70 Q 50 80 60 70"; // Original gentle smile
+    }
+  };
+
+  const getAntennaPulseSpeed = (currentMood: Mood) => {
+    switch (currentMood) {
+      case 'Happy':
+      case 'Surprised':
+      case 'Love':
+      case 'Silly':
+        return '1s';
+      case 'Sad':
+        return '4s';
+      default:
+        return '2s';
     }
   };
   
@@ -35,7 +53,16 @@ const BiboAvatar = forwardRef<HTMLDivElement, BiboAvatarProps>(({ isLoading, moo
     if (isLoading) return;
     onMoodChange('Happy');
     setIsJiggling(true);
+
+    const newSparkles = Array.from({ length: 8 }).map((_, i) => ({
+      id: Math.random(),
+      angle: (360 / 8) * i,
+      color: ['#f0abfc', '#fef08a', '#fafafa'][Math.floor(Math.random() * 3)],
+    }));
+    setSparkles(newSparkles);
+
     setTimeout(() => setIsJiggling(false), 400);
+    setTimeout(() => setSparkles([]), 600);
   };
 
   const QuickActionButton: React.FC<{ onClick: () => void; ariaLabel: string; children: React.ReactNode }> = ({ onClick, ariaLabel, children }) => (
@@ -69,11 +96,11 @@ const BiboAvatar = forwardRef<HTMLDivElement, BiboAvatarProps>(({ isLoading, moo
         aria-label="Interact with Bibo"
       >
         <div className="absolute inset-0 bg-purple-500 rounded-full blur-2xl opacity-50 transition-opacity duration-300"></div>
-        <svg viewBox="0 0 100 100" className={`relative z-10 animate-breathe ${isJiggling ? 'animate-jiggle' : ''}`}>
+        <svg viewBox="0 0 100 100" className={`relative z-10 animate-breathe ${isJiggling ? 'animate-jiggle' : ''}`} style={{ filter: 'drop-shadow(0 4px 10px rgba(168, 85, 247, 0.4))' }}>
           <path d="M 50,95 C 20,95 10,70 10,50 C 10,30 20,5 50,5 C 80,5 90,30 90,50 C 90,70 80,95 50,95 Z" fill="url(#bibo-gradient)" className="transition-all duration-300" />
           
           <g style={{ transform: `rotate(${headTilt}deg)`, transition: 'transform 0.3s ease-out', transformOrigin: '50% 80%' }}>
-            <g className={`transition-opacity duration-500 ${mood === 'Happy' || mood === 'Love' ? 'opacity-100' : 'opacity-0'}`}>
+            <g className={`transition-opacity duration-500 ${mood === 'Happy' || mood === 'Love' || mood === 'Silly' ? 'opacity-100' : 'opacity-0'}`}>
               <ellipse cx="28" cy="60" rx="8" ry="4" fill="url(#blush-gradient)" />
               <ellipse cx="72" cy="60" rx="8" ry="4" fill="url(#blush-gradient)" />
             </g>
@@ -81,6 +108,13 @@ const BiboAvatar = forwardRef<HTMLDivElement, BiboAvatarProps>(({ isLoading, moo
             <g transform="translate(0, -5)">
               <circle cx="35" cy="50" r="8" fill="white" />
               <circle cx="65" cy="50" r="8" fill="white" />
+              
+              {(mood !== 'Cool' && mood !== 'Wink' && mood !== 'Love') && (
+                <g>
+                    <circle cx="37" cy="48" r="1.5" fill="white" opacity="0.9" />
+                    <circle cx="67" cy="48" r="1.5" fill="white" opacity="0.9" />
+                </g>
+              )}
               
               {mood === 'Love' && (
                   <g className="animate-love-pulse" style={{transformOrigin: '50% 50%'}}>
@@ -96,20 +130,39 @@ const BiboAvatar = forwardRef<HTMLDivElement, BiboAvatarProps>(({ isLoading, moo
                   </g>
               )}
 
-              {(mood !== 'Love' && mood !== 'Wink') && (
+              {mood === 'Silly' && (
+                <g>
+                    <circle cx={35 + pupilOffset.x} cy={50 + pupilOffset.y} r="4" fill="black" className="animate-blink transition-transform duration-100 ease-out" />
+                    <path d="M 62 50 C 65 48, 68 48, 71 50" stroke="black" strokeWidth="1.5" fill="none" strokeLinecap="round" style={{ transform: `translate(${pupilOffset.x}px, ${pupilOffset.y}px)` }} />
+                </g>
+              )}
+
+              {(mood !== 'Love' && mood !== 'Wink' && mood !== 'Cool' && mood !== 'Silly') && (
                   <g>
                       <circle cx={35 + pupilOffset.x} cy={50 + pupilOffset.y} r="4" fill="black" className="animate-blink transition-transform duration-100 ease-out" />
                       <circle cx={65 + pupilOffset.x} cy={50 + pupilOffset.y} r="4" fill="black" className="animate-blink transition-transform duration-100 ease-out" />
                   </g>
               )}
+
+              {mood === 'Cool' && (
+                <g style={{ transform: `translate(${pupilOffset.x * 0.5}px, ${pupilOffset.y * 0.5}px)` }}>
+                    <path d="M25,45 C20,45 18,55 25,55 L45,55 C52,55 50,45 45,45 Z M55,45 C50,45 48,55 55,55 L75,55 C82,55 80,45 75,45 Z M45,50 L55,50" fill="#222" stroke="#111" strokeWidth="1" />
+                    <path d="M30,48 L40,48" stroke="white" strokeWidth="2" strokeLinecap="round" opacity="0.2" />
+                    <path d="M60,48 L70,48" stroke="white" strokeWidth="2" strokeLinecap="round" opacity="0.2" />
+                </g>
+              )}
             </g>
 
             <path d={getMouthPath(mood)} stroke="white" strokeWidth="2" fill="none" strokeLinecap="round" style={{transition: 'd 0.3s cubic-bezier(0.4, 0, 0.2, 1)'}} />
+            
+            {mood === 'Silly' && (
+              <path d="M48 83 C 48 90, 52 90, 52 83 Z" fill="#f472b6" style={{ transform: `translate(${pupilOffset.x * 0.2}px, 0)`}} />
+            )}
           </g>
 
           <g>
             <path d="M 50 15 Q 40 0 35 5" stroke="#9333ea" strokeWidth="2.5" fill="none" />
-            <circle cx="35" cy="5" r="4" fill="url(#antenna-orb)" className="animate-antenna-pulse" />
+            <circle cx="35" cy="5" r="4" fill="url(#antenna-orb)" className="animate-antenna-pulse" style={{ animationDuration: getAntennaPulseSpeed(mood) }}/>
           </g>
           
           <defs>
@@ -127,6 +180,17 @@ const BiboAvatar = forwardRef<HTMLDivElement, BiboAvatarProps>(({ isLoading, moo
             </radialGradient>
           </defs>
         </svg>
+        <div className="absolute inset-0 pointer-events-none">
+          {sparkles.map(s => (
+            <svg key={s.id} viewBox="0 0 10 10" className="absolute w-4 h-4 overflow-visible" style={{ top: '50%', left: '50%', transform: `rotate(${s.angle}deg)` }}>
+              <path
+                d="M5 0 L6 4 L10 5 L6 6 L5 10 L4 6 L0 5 L4 4 Z"
+                fill={s.color}
+                className="animate-sparkle-burst"
+              />
+            </svg>
+          ))}
+        </div>
       </div>
       <style>{`
         @keyframes breathe {
@@ -174,6 +238,23 @@ const BiboAvatar = forwardRef<HTMLDivElement, BiboAvatarProps>(({ isLoading, moo
         .animate-love-pulse {
           animation: love-pulse 1s ease-in-out infinite;
         }
+        @keyframes sparkle-burst {
+          0% {
+            transform: scale(0) translateY(0px);
+            opacity: 1;
+          }
+          50% {
+            opacity: 1;
+          }
+          100% {
+            transform: scale(1.5) translateY(-60px);
+            opacity: 0;
+          }
+        }
+        .animate-sparkle-burst {
+          transform-origin: center;
+          animation: sparkle-burst 0.6s ease-out;
+        }
       `}</style>
       <h1 className="text-3xl md:text-4xl font-bold text-white tracking-wider">bibo.bot</h1>
       <p className="text-purple-300">Your friendly AI companion</p>
@@ -190,7 +271,7 @@ const BiboAvatar = forwardRef<HTMLDivElement, BiboAvatarProps>(({ isLoading, moo
           </svg>
         </QuickActionButton>
       </div>
-      <div className="flex items-center space-x-2 pt-4">
+      <div className="grid grid-cols-5 gap-2 pt-4 max-w-xs mx-auto">
         <MoodButton emoji="🙂" newMood="Neutral" ariaLabel="Set mood to Neutral" />
         <MoodButton emoji="😄" newMood="Happy" ariaLabel="Set mood to Happy" />
         <MoodButton emoji="🤔" newMood="Curious" ariaLabel="Set mood to Curious" />
@@ -198,6 +279,8 @@ const BiboAvatar = forwardRef<HTMLDivElement, BiboAvatarProps>(({ isLoading, moo
         <MoodButton emoji="😮" newMood="Surprised" ariaLabel="Set mood to Surprised" />
         <MoodButton emoji="😉" newMood="Wink" ariaLabel="Set mood to Wink" />
         <MoodButton emoji="😍" newMood="Love" ariaLabel="Set mood to Love" />
+        <MoodButton emoji="😜" newMood="Silly" ariaLabel="Set mood to Silly" />
+        <MoodButton emoji="😎" newMood="Cool" ariaLabel="Set mood to Cool" />
       </div>
 
     </div>
