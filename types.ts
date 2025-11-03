@@ -5,3 +5,11 @@ export interface Message {
 }
 
 export type Mood = 'Neutral' | 'Happy' | 'Curious' | 'Sad' | 'Surprised' | 'Wink' | 'Love' | 'Silly' | 'Cool';
+
+export type LocationId = 'home' | 'woods' | 'caves';
+
+export interface Location {
+  id: LocationId;
+  name: string;
+  coords: { x: string; y: string; };
+}

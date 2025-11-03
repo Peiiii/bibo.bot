@@ -1,4 +1,3 @@
-
 import React, { useRef, useEffect } from 'react';
 import { Message } from '../types';
 import ChatMessage from './ChatMessage';
@@ -30,7 +29,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   }, [messages, isLoading]);
 
   return (
-    <div className="w-full max-w-2xl mx-auto flex flex-col h-full bg-gray-900/40 backdrop-blur-md rounded-t-2xl shadow-2xl overflow-hidden">
+    <div className="w-full h-full flex flex-col bg-gray-900/40 backdrop-blur-md rounded-2xl shadow-2xl overflow-hidden border border-purple-500/20">
       <div className="flex-1 p-4 sm:p-6 space-y-4 overflow-y-auto">
         {messages.map((msg) => (
           <ChatMessage key={msg.id} message={msg} />
