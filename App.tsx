@@ -1,6 +1,5 @@
-
-import React, { useState, useEffect, useCallback } from 'react';
-import { Message } from './types';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Message, Mood } from './types';
 import BiboAvatar from './components/BiboAvatar';
 import ChatWindow from './components/ChatWindow';
 import { createChatSession, sendMessageToBibo } from './services/geminiService';
@@ -12,6 +11,8 @@ const App: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [userInput, setUserInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [biboMood, setBiboMood] = useState<Mood>('Happy');
+  const moodTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
     const session = createChatSession();
@@ -25,29 +26,36 @@ const App: React.FC = () => {
     ]);
   }, []);
 
-  const handleSendMessage = useCallback(async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!userInput.trim() || isLoading || !chatSession) return;
+  const handleSendMessage = useCallback(async (messageText?: string) => {
+    const messageToSend = (messageText || userInput).trim();
+    if (!messageToSend || isLoading || !chatSession) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
-      text: userInput,
+      text: messageToSend,
       sender: 'user',
     };
 
     setMessages((prev) => [...prev, userMessage]);
-    setUserInput('');
+    if (!messageText) {
+      setUserInput('');
+    }
     setIsLoading(true);
 
+    if (moodTimeoutRef.current) {
+      clearTimeout(moodTimeoutRef.current);
+    }
+
     try {
-      const biboResponseText = await sendMessageToBibo(chatSession, userInput);
+      const biboResponse = await sendMessageToBibo(chatSession, messageToSend);
       
       const biboMessage: Message = {
         id: Date.now().toString() + 'b',
-        text: biboResponseText,
+        text: biboResponse.text,
         sender: 'bibo',
       };
       setMessages((prev) => [...prev, biboMessage]);
+      setBiboMood(biboResponse.mood);
 
     } catch (error) {
       const errorMessage: Message = {
@@ -56,16 +64,43 @@ const App: React.FC = () => {
         sender: 'bibo',
       };
       setMessages((prev) => [...prev, errorMessage]);
+      setBiboMood('Neutral');
     } finally {
       setIsLoading(false);
     }
   }, [userInput, isLoading, chatSession]);
 
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    handleSendMessage();
+  };
+  
+  const handleQuickAction = (prompt: string) => {
+    handleSendMessage(prompt);
+  };
+  
+  const handlePatBibo = () => {
+    if(isLoading) return;
+    
+    if (moodTimeoutRef.current) {
+      clearTimeout(moodTimeoutRef.current);
+    }
+    setBiboMood('Happy');
+    moodTimeoutRef.current = window.setTimeout(() => {
+      setBiboMood('Neutral');
+    }, 2500);
+  };
+
 
   return (
     <div className="h-screen w-screen bg-gradient-to-b from-gray-900 via-purple-900/50 to-gray-900 text-white flex flex-col p-2 sm:p-4">
       <header className="flex-shrink-0 py-4">
-        <BiboAvatar isLoading={isLoading} />
+        <BiboAvatar 
+          isLoading={isLoading} 
+          mood={biboMood}
+          onQuickAction={handleQuickAction}
+          onPat={handlePatBibo}
+        />
       </header>
       <main className="flex-1 min-h-0">
         <ChatWindow 
@@ -73,7 +108,7 @@ const App: React.FC = () => {
           isLoading={isLoading}
           userInput={userInput}
           setUserInput={setUserInput}
-          onSendMessage={handleSendMessage}
+          onSendMessage={handleFormSubmit}
         />
       </main>
     </div>
