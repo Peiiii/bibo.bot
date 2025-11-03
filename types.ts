@@ -4,4 +4,4 @@ export interface Message {
   sender: 'user' | 'bibo';
 }
 
-export type Mood = 'Neutral' | 'Happy' | 'Curious';
+export type Mood = 'Neutral' | 'Happy' | 'Curious' | 'Sad' | 'Surprised' | 'Wink' | 'Love';

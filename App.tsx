@@ -12,7 +12,6 @@ const App: React.FC = () => {
   const [userInput, setUserInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [biboMood, setBiboMood] = useState<Mood>('Happy');
-  const moodTimeoutRef = useRef<number | null>(null);
   const [pupilOffset, setPupilOffset] = useState({ x: 0, y: 0 });
   const [headTilt, setHeadTilt] = useState(0);
   const biboAvatarRef = useRef<HTMLDivElement>(null);
@@ -45,10 +44,6 @@ const App: React.FC = () => {
     }
     setIsLoading(true);
 
-    if (moodTimeoutRef.current) {
-      clearTimeout(moodTimeoutRef.current);
-    }
-
     try {
       const biboResponse = await sendMessageToBibo(chatSession, messageToSend);
       
@@ -67,7 +62,7 @@ const App: React.FC = () => {
         sender: 'bibo',
       };
       setMessages((prev) => [...prev, errorMessage]);
-      setBiboMood('Neutral');
+      setBiboMood('Sad');
     } finally {
       setIsLoading(false);
     }
@@ -82,16 +77,9 @@ const App: React.FC = () => {
     handleSendMessage(prompt);
   };
   
-  const handlePatBibo = () => {
-    if(isLoading) return;
-    
-    if (moodTimeoutRef.current) {
-      clearTimeout(moodTimeoutRef.current);
-    }
-    setBiboMood('Happy');
-    moodTimeoutRef.current = window.setTimeout(() => {
-      setBiboMood('Neutral');
-    }, 2500);
+  const handleSetBiboMood = (newMood: Mood) => {
+    if (isLoading) return;
+    setBiboMood(newMood);
   };
 
   const handleHeaderMouseMove = (e: React.MouseEvent<HTMLElement>) => {
@@ -104,7 +92,6 @@ const App: React.FC = () => {
     const deltaX = e.clientX - centerX;
     const deltaY = e.clientY - centerY;
 
-    // Define an interaction radius around Bibo. The effect is clamped outside this radius.
     const interactionRadius = biboRect.width * 1.5;
 
     const moveX = Math.max(-1, Math.min(1, deltaX / interactionRadius));
@@ -138,7 +125,7 @@ const App: React.FC = () => {
           isLoading={isLoading} 
           mood={biboMood}
           onQuickAction={handleQuickAction}
-          onPat={handlePatBibo}
+          onMoodChange={handleSetBiboMood}
           pupilOffset={pupilOffset}
           headTilt={headTilt}
         />
